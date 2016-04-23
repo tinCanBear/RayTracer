@@ -1,11 +1,15 @@
-public abstract class Surface {
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+abstract class Surface {
     private int materialIndex;
 
-    public Surface(String param) {
+    Surface(String param) {
         materialIndex = Integer.parseInt(param);
     }
 
-    public int getMaterialIndex() {
+    int getMaterialIndex() {
         return materialIndex;
     }
+
+    public abstract Intersection getIntersection(Vector3D V, Vector3D P0);
 }

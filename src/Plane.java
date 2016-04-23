@@ -1,10 +1,10 @@
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-public class Plane extends Surface {
+class Plane extends Surface {
     private Vector3D normal;
     private double offset;
 
-    public Plane(String[] params) {
+    Plane(String[] params) {
         super(params[4]);
         normal = new Vector3D(Double.parseDouble(params[0]),
                 Double.parseDouble(params[1]),
@@ -18,5 +18,10 @@ public class Plane extends Surface {
 
     public double getOffset() {
         return offset;
+    }
+
+    @Override
+    public Intersection getIntersection(Vector3D V, Vector3D P0) {
+        return null;
     }
 }

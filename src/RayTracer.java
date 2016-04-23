@@ -1,14 +1,16 @@
-import java.awt.Transparency;
-import java.awt.color.*;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.util.DoubleArray;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-
-import javax.imageio.ImageIO;
 
 /**
  * Main class for ray tracing exercise.
@@ -16,13 +18,22 @@ import javax.imageio.ImageIO;
 
 public class RayTracer {
 
-    public int imageWidth;
-    public int imageHeight;
-    Settings settings = null;
-    Camera camera = null;
-    public List<Material> materials = new ArrayList<>();
-    public List<Surface> surfaces = new ArrayList<>();
-    public List<Light> lights = new ArrayList<>();
+    private int imageWidth;
+    private int imageHeight;
+    private Settings settings;
+    private Camera camera;
+    private ArrayList<Material> materials;
+    private List<Surface> surfaces;
+    private ArrayList<Light> lights;
+    private Vector3D upperLeftScreenCorner = null;
+
+    public RayTracer() {
+        camera = null;
+        settings = null;
+        lights = new ArrayList<>();
+        surfaces = new ArrayList<>();
+        materials = new ArrayList<>();
+    }
 
     /**
      * Runs the ray tracer. Takes scene file, output image file and image size as input.
@@ -73,7 +84,7 @@ public class RayTracer {
         FileReader fr = new FileReader(sceneFileName);
 
         BufferedReader r = new BufferedReader(fr);
-        String line = null;
+        String line;
         int lineNum = 0;
         System.out.println("Started parsing scene file " + sceneFileName);
 
@@ -91,38 +102,38 @@ public class RayTracer {
 
                 if (code.equals("cam")) {
                     // Add code here to parse camera parameters
-                    assert params.length==11 : String.format("cam Expected parameters: 11, Actual: %d", params.length);
+                    assert params.length == 11 : String.format("cam Expected parameters: 11, Actual: %d", params.length);
                     camera = new Camera(params);
                     System.out.println(String.format("Parsed camera parameters (line %d)", lineNum));
                 } else if (code.equals("set")) {
                     // Add code here to parse general settings parameters
-                    assert params.length==5 : String.format("set Expected parameters: 5, Actual: %d", params.length);
+                    assert params.length == 5 : String.format("set Expected parameters: 5, Actual: %d", params.length);
                     settings = new Settings(params);
                     System.out.println(String.format("Parsed general settings (line %d)", lineNum));
                 } else if (code.equals("mtl")) {
                     // Add code here to parse material parameters
-                    assert params.length==11 : String.format("mtl Expected parameters: 11, Actual: %d", params.length);
+                    assert params.length == 11 : String.format("mtl Expected parameters: 11, Actual: %d", params.length);
                     materials.add(new Material(params));
                     System.out.println(String.format("Parsed material (line %d)", lineNum));
                 } else if (code.equals("sph")) {
                     // Add code here to parse sphere parameters
-                    assert params.length==5 : String.format("sph Expected parameters: 5, Actual: %d", params.length);
+                    assert params.length == 5 : String.format("sph Expected parameters: 5, Actual: %d", params.length);
                     surfaces.add(new Sphere(params));
 
                     System.out.println(String.format("Parsed sphere (line %d)", lineNum));
                 } else if (code.equals("pln")) {
                     // Add code here to parse plane parameters
-                    assert params.length==5 : String.format("pln Expected parameters: 5, Actual: %d", params.length);
+                    assert params.length == 5 : String.format("pln Expected parameters: 5, Actual: %d", params.length);
                     surfaces.add(new Plane(params));
                     System.out.println(String.format("Parsed plane (line %d)", lineNum));
                 } else if (code.equals("cyl")) {
                     // Add code here to parse cylinder parameters
-                    assert params.length==9 : String.format("cyl Expected parameters: 9, Actual: %d", params.length);
+                    assert params.length == 9 : String.format("cyl Expected parameters: 9, Actual: %d", params.length);
                     surfaces.add(new Cylinder(params));
                     System.out.println(String.format("Parsed cylinder (line %d)", lineNum));
                 } else if (code.equals("lgt")) {
                     // Add code here to parse light parameters
-                    assert params.length==9 : String.format("lgt Expected parameters: 9, Actual: %d", params.length);
+                    assert params.length == 9 : String.format("lgt Expected parameters: 9, Actual: %d", params.length);
                     lights.add(new Light(params));
                     System.out.println(String.format("Parsed light (line %d)", lineNum));
                 } else {
@@ -143,20 +154,25 @@ public class RayTracer {
      */
     public void renderScene(String outputFileName) {
         long startTime = System.currentTimeMillis();
+        fixUpVectorGetCameraHeightGetCorner();
 
         // Create a byte array to hold the pixel data:
         byte[] rgbData = new byte[this.imageWidth * this.imageHeight * 3];
 
+//        Image RayCast(Camera camera, Scene scene, int width, int height) {
+//            Image image = new Image(width, height);
+        for (int i = 0; i < this.imageWidth; i++) {
+            for (int j = 0; j < this.imageHeight; j++) {
+                Vector3D ray = ConstructRayTowardsPixel(i, j);
+                Color color = calculateColor(0, ray, camera.getPosition(), FindSortIntersections(ray));
+                setPixelLocationRGB(i, j, rgbData, color);
 
+            }
+        }
+//            return image;
+//        }
         // Put your ray tracing code here!
         //
-        // Write pixel color values in RGB format to rgbData:
-        // Pixel [x, y] red component is in rgbData[(y * this.imageWidth + x) * 3]
-        //            green component is in rgbData[(y * this.imageWidth + x) * 3 + 1]
-        //             blue component is in rgbData[(y * this.imageWidth + x) * 3 + 2]
-        //
-        // Each of the red, green and blue components should be a byte, i.e. 0-255
-
 
         long endTime = System.currentTimeMillis();
         Long renderTime = endTime - startTime;
@@ -172,7 +188,56 @@ public class RayTracer {
 
     }
 
+    private Color calculateColor(int recursionLevel, Vector3D ray, Vector3D position, List<Intersection> intersections) {
+        if (recursionLevel == settings.getMaxRecursion()){
+            return settings.getBackgroundColor();
+        }
 
+        Random rnd = new Random();
+        return new Color(rnd.nextDouble(),rnd.nextDouble(),rnd.nextDouble());
+    }
+
+    private List<Intersection> FindSortIntersections(Vector3D ray) {
+        List<Intersection> intersections = new ArrayList<>();
+        Intersection tempIntersection;
+        //find intersections
+        for (Surface surface : surfaces) {
+            tempIntersection = surface.getIntersection(ray, camera.getPosition());
+            if (tempIntersection != null) {
+                intersections.add(tempIntersection);
+            }
+        }
+        //sort intersections by distance
+        Collections.sort(intersections, new Comparator<Intersection>(){
+            @Override
+            public int compare(Intersection a, Intersection b){
+                return Double.compare(a.getDistance(), b.getDistance());
+            }
+        });
+
+        return intersections;
+    }
+
+    private Vector3D ConstructRayTowardsPixel(int i, int j) {
+        double x = (double) i;
+        double y = (double) j;
+        Vector3D V = upperLeftScreenCorner.subtract(camera.getLeftSideScreenNormalized().scalarMultiply(x * camera.getScreenWidth() / imageWidth));
+        V = V.subtract(camera.getUpFixedNormalized().scalarMultiply(camera.getScreenHeight() * (y / imageHeight)));
+        V = V.subtract(camera.getPosition()).normalize();
+        return V;
+    }
+/*
+
+    private Color GetColor(Vector3D ray, Intersection hit) {
+    }
+*/
+
+    private void setPixelLocationRGB(int x, int y, byte[] rgbData, Color color) {
+        rgbData[(y * this.imageWidth + x) * 3] = color.getRed();
+        rgbData[(y * this.imageWidth + x) * 3 + 1] = color.getGreen();
+        rgbData[(y * this.imageWidth + x) * 3 + 2] = color.getBlue();
+
+    }
     //////////////////////// FUNCTIONS TO SAVE IMAGES IN PNG FORMAT //////////////////////////////////////////
 
     /*
@@ -212,5 +277,17 @@ public class RayTracer {
         }
     }
 
+    private void fixUpVectorGetCameraHeightGetCorner() {
+        // adjust camera settings
+        camera.setToScreenNormalized(camera.getLookAt().subtract(camera.getPosition()).normalize());
+        camera.setToCenterScreen(camera.getToScreenNormalized().scalarMultiply(camera.getScreenDistance()));
+        camera.setLeftSideScreenNormalized(camera.getToScreenNormalized().crossProduct(camera.getUp()).normalize());
+        camera.setUpFixedNormalized(camera.getLeftSideScreenNormalized().crossProduct(camera.getToScreenNormalized()).normalize());
+        camera.setScreenHeight(camera.getScreenWidth() * imageHeight / imageWidth);
+        // adjust screen settings
+        upperLeftScreenCorner = camera.getPosition().add(camera.getToCenterScreen());
+        upperLeftScreenCorner = upperLeftScreenCorner.add(camera.getLeftSideScreenNormalized().scalarMultiply(camera.getScreenWidth() / 2));
+        upperLeftScreenCorner = upperLeftScreenCorner.add(camera.getUpFixedNormalized().scalarMultiply(camera.getScreenHeight() / 2));
+    }
 
 }

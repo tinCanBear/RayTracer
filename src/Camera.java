@@ -1,14 +1,63 @@
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 
-public class Camera {
+class Camera {
     private Vector3D position;
     private Vector3D lookAt;
     private Vector3D up;
+    private Vector3D upFixedNormalized;
+    private Vector3D toScreenNormalized;
+    private Vector3D toCenterScreen;
+
+    Vector3D getToCenterScreen() {
+        return toCenterScreen;
+    }
+
+    void setToCenterScreen(Vector3D toCenterScreen) {
+        this.toCenterScreen = toCenterScreen;
+    }
+
+    private Vector3D leftSideScreenNormalized;
+
+    Vector3D getUpFixedNormalized() {
+        return upFixedNormalized;
+    }
+
+    Vector3D getToScreenNormalized() {
+        return toScreenNormalized;
+    }
+
+    Vector3D getLeftSideScreenNormalized() {
+        return leftSideScreenNormalized;
+    }
+
+    float getScreenHeight() {
+        return screenHeight;
+    }
+
+    void setUpFixedNormalized(Vector3D upFixedNormalized) {
+
+        this.upFixedNormalized = upFixedNormalized;
+    }
+
+    void setToScreenNormalized(Vector3D toScreenNormalized) {
+        this.toScreenNormalized = toScreenNormalized;
+    }
+
+    void setLeftSideScreenNormalized(Vector3D leftSideScreenNormalized) {
+        this.leftSideScreenNormalized = leftSideScreenNormalized;
+    }
+
+    void setScreenHeight(float screenHeight) {
+        this.screenHeight = screenHeight;
+    }
+
     private float screenDistance;
     private float screenWidth;
+    private float screenHeight;
 
-    public Camera(String[] params) {
+
+    Camera(String[] params) {
         double[] vectors = new double[9];
         for (int i = 0; i < vectors.length; i++){vectors[i] = Double.parseDouble(params[i]);}
         position = new Vector3D(vectors[0],vectors[1],vectors[2]);
@@ -26,7 +75,7 @@ public class Camera {
         this.screenWidth = screenWidth;
     }
 
-    public Vector3D getPosition() {
+    Vector3D getPosition() {
         return position;
     }
 
@@ -34,7 +83,7 @@ public class Camera {
         this.position = position;
     }
 
-    public Vector3D getLookAt() {
+    Vector3D getLookAt() {
         return lookAt;
     }
 
@@ -42,7 +91,7 @@ public class Camera {
         this.lookAt = lookAt;
     }
 
-    public Vector3D getUp() {
+    Vector3D getUp() {
         return up;
     }
 
@@ -50,7 +99,7 @@ public class Camera {
         this.up = up;
     }
 
-    public float getScreenDistance() {
+    float getScreenDistance() {
         return screenDistance;
     }
 
@@ -58,7 +107,7 @@ public class Camera {
         this.screenDistance = screenDistance;
     }
 
-    public float getScreenWidth() {
+    float getScreenWidth() {
         return screenWidth;
     }
 
