@@ -7,7 +7,48 @@ public class Light {
     private float shadowIntensity;
     private float softShadowsRadius;
 
+    public Vector3D getPosition() {
+        return position;
+    }
+
+    public void setPosition(Vector3D position) {
+        this.position = position;
+    }
+
+    public Color getLightColor() {
+        return lightColor;
+    }
+
+    public void setLightColor(Color lightColor) {
+        this.lightColor = lightColor;
+    }
+
+    public float getSpecularIntensity() {
+        return specularIntensity;
+    }
+
+    public void setSpecularIntensity(float specularIntensity) {
+        this.specularIntensity = specularIntensity;
+    }
+
+    public float getShadowIntensity() {
+        return shadowIntensity;
+    }
+
+    public void setShadowIntensity(float shadowIntensity) {
+        this.shadowIntensity = shadowIntensity;
+    }
+
+    public float getSoftShadowsRadius() {
+        return softShadowsRadius;
+    }
+
+    public void setSoftShadowsRadius(float softShadowsRadius) {
+        this.softShadowsRadius = softShadowsRadius;
+    }
+
     public Light(String[] params) {
+
         position = new Vector3D(Double.parseDouble(params[0]),
                 Double.parseDouble(params[1]),
                 Double.parseDouble(params[2]));

@@ -22,6 +22,14 @@ class Plane extends Surface {
 
     @Override
     public Intersection getIntersection(Vector3D V, Vector3D P0) {
-        return null;
+        double dotProd = V.dotProduct(getNormal());
+        if (dotProd == 0) return null;
+
+        double distance = (getOffset() - P0.dotProduct(getNormal())) / dotProd;
+        if (distance <= 0) return null;
+
+        Vector3D location = P0.add(V.scalarMultiply(distance));
+        //location = location.add(getNormal().scalarMultiply(1e-10));
+        return new Intersection(getMaterialIndex(), distance, location,  getNormal());
     }
 }

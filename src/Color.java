@@ -6,6 +6,19 @@ class Color {
     private final static int TO_BYTE = 255;
 
     private double R;
+
+    public void setR(double r) {
+        R = r;
+    }
+
+    public void setG(double g) {
+        G = g;
+    }
+
+    public void setB(double b) {
+        B = b;
+    }
+
     private double G;
     private double B;
 
@@ -50,4 +63,22 @@ class Color {
         return B;
     }
 
+    public static Color sum(Color a, Color b) {
+        Color c = new Color();
+        c.setR(a.getR() + b.getR());
+        c.setG(a.getG() + b.getG());
+        c.setB(a.getB() + b.getB());
+        return c;
+    }
+
+    public static Color multiplyWithFactor(Color a, Color b, double d) {
+        Color c = new Color();
+        System.out.println("in mult");
+
+        c.setR(a.getR() * b.getR() * d);
+        c.setG(a.getG() * b.getG() * d);
+        c.setB(a.getB() * b.getB() * d);
+        System.out.println("out mult");
+        return c;
+    }
 }

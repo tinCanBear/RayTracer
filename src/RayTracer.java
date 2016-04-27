@@ -1,5 +1,4 @@
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.apache.commons.math3.util.DoubleArray;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -12,11 +11,14 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
+import static java.lang.Math.pow;
+
 /**
  * Main class for ray tracing exercise.
  */
 
 public class RayTracer {
+    int cntr = 0;
 
     private int imageWidth;
     private int imageHeight;
@@ -39,7 +41,6 @@ public class RayTracer {
      * Runs the ray tracer. Takes scene file, output image file and image size as input.
      */
     public static void main(String[] args) {
-
         try {
 
             RayTracer tracer = new RayTracer();
@@ -153,6 +154,7 @@ public class RayTracer {
      * Renders the loaded scene and saves it to the specified file location.
      */
     public void renderScene(String outputFileName) {
+        System.out.println("Starting to render");
         long startTime = System.currentTimeMillis();
         fixUpVectorGetCameraHeightGetCorner();
 
@@ -164,7 +166,7 @@ public class RayTracer {
         for (int i = 0; i < this.imageWidth; i++) {
             for (int j = 0; j < this.imageHeight; j++) {
                 Vector3D ray = ConstructRayTowardsPixel(i, j);
-                Color color = calculateColor(0, ray, camera.getPosition(), FindSortIntersections(ray));
+                Color color = calculateColor(0, ray, camera.getPosition(), findSortIntersections(ray));
                 setPixelLocationRGB(i, j, rgbData, color);
 
             }
@@ -189,33 +191,113 @@ public class RayTracer {
     }
 
     private Color calculateColor(int recursionLevel, Vector3D ray, Vector3D position, List<Intersection> intersections) {
-        if (recursionLevel == settings.getMaxRecursion()){
+        System.out.println("calculating color");
+        if (recursionLevel == settings.getMaxRecursion() || intersections.isEmpty()) {
             return settings.getBackgroundColor();
         }
+        System.out.println(cntr);
+        cntr++;
+        Color resolvedColor = new Color();
+        Intersection firstIntersection = intersections.get(0);
+        Vector3D newPosition = firstIntersection.getLocation();
+        Vector3D newRay = firstIntersection.getNormal().
+                scalarMultiply(ray.dotProduct(firstIntersection.getNormal()) * (-2)).
+                add(ray).
+                normalize();
+        System.out.println(2);
 
-        Random rnd = new Random();
-        return new Color(rnd.nextDouble(),rnd.nextDouble(),rnd.nextDouble());
+        for (Light light : lights) {
+            resolvedColor = Color.sum(resolvedColor, calculateDiffSpecColor(light, firstIntersection));
+        }
+        resolvedColor = Color.sum(resolvedColor,
+                Color.multiplyWithFactor(
+                        calculateColor(recursionLevel + 1,
+                                newRay,
+                                newPosition,
+                                findSortIntersections(newRay)),
+                        materials.get(firstIntersection.getMaterialIndex()-1).getReflectionColor(),
+                        1));
+        System.out.println(3);
+        return resolvedColor;
     }
 
-    private List<Intersection> FindSortIntersections(Vector3D ray) {
+    private Color calculateDiffSpecColor(Light light, Intersection intersection) {
+        System.out.println("light");
+        Vector3D newPosition = intersection.getLocation();
+        Vector3D newRay = light.getPosition().subtract(newPosition).normalize();
+        System.out.println("nop light?");
+
+        double shadowIntensity = 1;
+        List<Intersection> lightIntersections = findSortIntersections(newRay, newPosition);
+
+        if (lightIntersections.size() > 0) {
+            Vector3D nextLocation = lightIntersections.get(0).getLocation();
+            double distanceToFirstLocation = nextLocation.subtract(newPosition).getNorm();
+            double distanceToLight = light.getPosition().subtract(newPosition).getNorm();
+            shadowIntensity = distanceToFirstLocation < distanceToLight ?
+                    1 - light.getShadowIntensity() : shadowIntensity;
+        }
+        System.out.println("nop light1?");
+
+        double lightDir = intersection.getNormal().dotProduct(newRay);
+        System.out.println("nop light2?");
+
+        double directionToLight = lightDir < 0 ? 0 : lightDir;
+        System.out.println("nop light20?");
+
+        Color diffColor = calculateDiffuseColor(intersection, light, directionToLight, shadowIntensity);
+        System.out.println("nop light21?");
+
+        Color specColor = calculateSpecularColor(intersection, light, shadowIntensity, newPosition, newRay);
+        System.out.println("nop light22?");
+
+        return Color.sum(diffColor, specColor);
+    }
+
+    private Color calculateSpecularColor(Intersection intersection, Light light, double shadowIntensity, Vector3D newPosition, Vector3D newRay) {
+        Vector3D x = camera.getPosition().subtract(newPosition).normalize();
+        Vector3D y = intersection.getNormal().scalarMultiply(2 * newRay.dotProduct(intersection.getNormal())).subtract(newRay).normalize();
+        double phongCoeffTemp = pow(x.dotProduct(y), materials.get(intersection.getMaterialIndex() - 1).getSpecularityCoefficient());
+        double phongCoeff = phongCoeffTemp < 0 ? 0 : phongCoeffTemp;
+        return Color.multiplyWithFactor(materials.get(intersection.getMaterialIndex() - 1).getSpecularColor(),
+                light.getLightColor(),
+                phongCoeff * shadowIntensity * light.getSpecularIntensity());
+    }
+
+    private Color calculateDiffuseColor(Intersection intersection, Light light, double directionToLight, double shadowIntensity) {
+        System.out.println(light);
+        System.out.println(intersection);
+        System.out.println(intersection.getMaterialIndex()-1);
+        int index = intersection.getMaterialIndex() - 1 >= 0 ? intersection.getMaterialIndex() - 1 : 0;
+        return Color.multiplyWithFactor(materials.get(intersection.getMaterialIndex() - 1).getDiffuseColor(),
+                light.getLightColor(),
+                directionToLight * shadowIntensity);
+    }
+
+
+    private List<Intersection> findSortIntersections(Vector3D ray, Vector3D position) {
         List<Intersection> intersections = new ArrayList<>();
         Intersection tempIntersection;
         //find intersections
         for (Surface surface : surfaces) {
-            tempIntersection = surface.getIntersection(ray, camera.getPosition());
+            tempIntersection = surface.getIntersection(ray, position);
             if (tempIntersection != null) {
                 intersections.add(tempIntersection);
             }
         }
         //sort intersections by distance
-        Collections.sort(intersections, new Comparator<Intersection>(){
+        Collections.sort(intersections, new Comparator<Intersection>() {
             @Override
-            public int compare(Intersection a, Intersection b){
+            public int compare(Intersection a, Intersection b) {
                 return Double.compare(a.getDistance(), b.getDistance());
             }
         });
 
         return intersections;
+    }
+
+    private List<Intersection> findSortIntersections(Vector3D ray) {
+        return findSortIntersections(ray, camera.getPosition());
     }
 
     private Vector3D ConstructRayTowardsPixel(int i, int j) {
