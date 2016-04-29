@@ -47,7 +47,7 @@ class Sphere extends Surface {
 
         Vector3D location = P0.add(V.scalarMultiply(dist));
         Vector3D normal = location.subtract(center);
-//         location = location.add(normal.scalarMultiply(1e-10)); TODO - is this relevant???
+         location = location.add(normal.scalarMultiply(1e-10)); //TODO
         return new Intersection(getMaterialIndex(), dist, location, normal);
     }
 }

@@ -73,12 +73,10 @@ class Color {
 
     public static Color multiplyWithFactor(Color a, Color b, double d) {
         Color c = new Color();
-        System.out.println("in mult");
 
         c.setR(a.getR() * b.getR() * d);
         c.setG(a.getG() * b.getG() * d);
         c.setB(a.getB() * b.getB() * d);
-        System.out.println("out mult");
         return c;
     }
 }

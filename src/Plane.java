@@ -12,6 +12,12 @@ class Plane extends Surface {
         offset = Double.parseDouble(params[3]);
     }
 
+    public Plane(int materialIndex, Vector3D direction, double v) {
+        super(Integer.toString(materialIndex));
+        this.normal = direction;
+        this.offset = v;
+    }
+
     public Vector3D getNormal() {
         return normal;
     }
@@ -29,7 +35,7 @@ class Plane extends Surface {
         if (distance <= 0) return null;
 
         Vector3D location = P0.add(V.scalarMultiply(distance));
-        //location = location.add(getNormal().scalarMultiply(1e-10));
+        location = location.add(getNormal().scalarMultiply(1e-10));
         return new Intersection(getMaterialIndex(), distance, location,  getNormal());
     }
 }

@@ -154,7 +154,6 @@ public class RayTracer {
      * Renders the loaded scene and saves it to the specified file location.
      */
     public void renderScene(String outputFileName) {
-        System.out.println("Starting to render");
         long startTime = System.currentTimeMillis();
         fixUpVectorGetCameraHeightGetCorner();
 
@@ -191,12 +190,9 @@ public class RayTracer {
     }
 
     private Color calculateColor(int recursionLevel, Vector3D ray, Vector3D position, List<Intersection> intersections) {
-        System.out.println("calculating color");
         if (recursionLevel == settings.getMaxRecursion() || intersections.isEmpty()) {
             return settings.getBackgroundColor();
         }
-        System.out.println(cntr);
-        cntr++;
         Color resolvedColor = new Color();
         Intersection firstIntersection = intersections.get(0);
         Vector3D newPosition = firstIntersection.getLocation();
@@ -204,7 +200,6 @@ public class RayTracer {
                 scalarMultiply(ray.dotProduct(firstIntersection.getNormal()) * (-2)).
                 add(ray).
                 normalize();
-        System.out.println(2);
 
         for (Light light : lights) {
             resolvedColor = Color.sum(resolvedColor, calculateDiffSpecColor(light, firstIntersection));
@@ -217,15 +212,12 @@ public class RayTracer {
                                 findSortIntersections(newRay)),
                         materials.get(firstIntersection.getMaterialIndex()-1).getReflectionColor(),
                         1));
-        System.out.println(3);
         return resolvedColor;
     }
 
     private Color calculateDiffSpecColor(Light light, Intersection intersection) {
-        System.out.println("light");
         Vector3D newPosition = intersection.getLocation();
         Vector3D newRay = light.getPosition().subtract(newPosition).normalize();
-        System.out.println("nop light?");
 
         double shadowIntensity = 1;
         List<Intersection> lightIntersections = findSortIntersections(newRay, newPosition);
@@ -237,19 +229,14 @@ public class RayTracer {
             shadowIntensity = distanceToFirstLocation < distanceToLight ?
                     1 - light.getShadowIntensity() : shadowIntensity;
         }
-        System.out.println("nop light1?");
 
         double lightDir = intersection.getNormal().dotProduct(newRay);
-        System.out.println("nop light2?");
 
         double directionToLight = lightDir < 0 ? 0 : lightDir;
-        System.out.println("nop light20?");
 
         Color diffColor = calculateDiffuseColor(intersection, light, directionToLight, shadowIntensity);
-        System.out.println("nop light21?");
 
         Color specColor = calculateSpecularColor(intersection, light, shadowIntensity, newPosition, newRay);
-        System.out.println("nop light22?");
 
         return Color.sum(diffColor, specColor);
     }
@@ -265,9 +252,6 @@ public class RayTracer {
     }
 
     private Color calculateDiffuseColor(Intersection intersection, Light light, double directionToLight, double shadowIntensity) {
-        System.out.println(light);
-        System.out.println(intersection);
-        System.out.println(intersection.getMaterialIndex()-1);
         int index = intersection.getMaterialIndex() - 1 >= 0 ? intersection.getMaterialIndex() - 1 : 0;
         return Color.multiplyWithFactor(materials.get(intersection.getMaterialIndex() - 1).getDiffuseColor(),
                 light.getLightColor(),
